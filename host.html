@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Live-Quiz Lehrperson</title>
+<link rel="stylesheet" href="/static/stil.css">
+<style>
+body{font-size:clamp(14px,1.25vw,26px);overflow-x:hidden}
+.app{min-height:100vh;display:flex;flex-direction:column;padding:2.2vh 3vw 3vh}
+.kopf{display:flex;align-items:center;justify-content:space-between;gap:1em;margin-bottom:2.4vh}
+.kopf .kurs{font-family:var(--title);font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:.85em}
+.kopf .rechts{display:flex;gap:.6em;align-items:center}
+.klein{font-size:.75em;padding:.5em 1.3em}
+main{flex:1;display:flex;flex-direction:column}
+section{flex:1;display:flex;flex-direction:column;animation:rein .3s ease}
+.fuss{display:flex;justify-content:flex-end;gap:.8em;align-items:center;margin-top:2.4vh}
+.fuss .hinweis{margin-right:auto;font-size:.75em;color:#6b6f9e}
+
+/* Lobby */
+.lobby{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:3vw;align-items:stretch}
+.mitmachen{background:var(--navy);color:var(--weiss);padding:2.4em 2.4em;display:flex;flex-direction:column;gap:1.2em;position:relative}
+.mitmachen:before{content:"";position:absolute;left:-1.2em;top:-1.2em;width:55%;height:40%;background:var(--rosa);z-index:-1}
+.mitmachen h2{color:var(--rosa);font-size:1.3em}
+.url{font-family:var(--title);font-weight:700;font-size:clamp(22px,2.7vw,56px);letter-spacing:.01em;word-break:break-all;line-height:1.05}
+.qrbox{display:flex;gap:1.4em;align-items:center}
+.qr{background:#fff;padding:.5em;width:clamp(150px,17vw,360px);flex:0 0 auto}
+.qr svg{display:block;width:100%;height:auto}
+.qrbox p{font-size:.95em;color:var(--rosa)}
+.teiln{display:flex;flex-direction:column}
+.teiln h2{font-size:1.5em;display:flex;align-items:baseline;gap:.5em}
+.teiln h2 b{font-size:1.9em;color:var(--koralle)}
+.namen{display:flex;flex-wrap:wrap;gap:.5em;margin-top:1.2em;align-content:flex-start;flex:1}
+.namen button{background:var(--rosa);border-radius:999px;padding:.35em 1.1em;font-weight:700;animation:pop .35s ease}
+.namen button:hover{background:var(--koralle);color:#fff;text-decoration:line-through}
+.leer{color:#8a8db5;font-style:italic;margin-top:1.2em}
+.einst{display:flex;gap:1em;align-items:center;font-size:.85em;margin-top:1.2em;flex-wrap:wrap}
+.einst select{border:2px solid var(--rosa);border-radius:999px;padding:.3em .9em;background:#fff}
+
+/* Frage */
+.fkopf{display:flex;align-items:flex-start;gap:2em}
+.fkopf .txt{flex:1}
+.zaehler{font-family:var(--title);font-weight:700;color:var(--koralle);letter-spacing:.05em;margin-left:.8em}
+.frage{font-size:clamp(22px,2.4vw,52px);font-weight:600;line-height:1.22;margin-top:.6em}
+.uhr{position:relative;width:clamp(90px,8vw,170px);aspect-ratio:1;flex:0 0 auto}
+.uhr svg{width:100%;height:100%;transform:rotate(-90deg)}
+.uhr span{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--title);font-weight:700;font-size:2.4em;padding-top:.15em}
+.uhr.knapp span{color:var(--koralle)}
+.mitte{flex:1;display:flex;align-items:center;justify-content:center;gap:3vw;margin:2.4vh 0;min-height:0}
+.bild{background:var(--sand);border-radius:16px;padding:1.4em;display:flex;align-items:center;justify-content:center;height:30vh}
+.bild svg{height:100%;width:auto;max-width:55vw}
+.antw-info{text-align:center}
+.antw-info b{display:block;font-family:var(--title);font-size:3.2em;line-height:1}
+.antw-info span{font-size:.85em;text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+.optionen{display:grid;grid-template-columns:1fr 1fr;gap:1.2vw}
+.opt{background:var(--bg);color:var(--fg);border-radius:14px;padding:1em 1.3em;display:flex;align-items:center;gap:.9em;font-weight:700;font-size:1.25em;min-height:11vh;transition:opacity .3s,transform .3s;position:relative}
+.opt.weg{opacity:.22}
+.opt.ja{transform:scale(1.02);box-shadow:0 0 0 5px var(--weiss),0 0 0 9px var(--bg)}
+.opt .haken{margin-left:auto;font-size:1.4em}
+
+/* Auflösung */
+.balken{display:flex;align-items:flex-end;gap:2vw;height:26vh;padding:0 2vw}
+.balken div{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;width:clamp(60px,7vw,150px)}
+.balken i{display:block;width:100%;background:var(--bg);border-radius:10px 10px 0 0;min-height:8px;transition:height .6s ease}
+.balken b{font-family:var(--title);font-size:1.8em;margin-bottom:.2em}
+.balken .weg{opacity:.3}
+.erkl{background:var(--sand);border-left:6px solid var(--navy);border-radius:12px;padding:.9em 1.2em;margin-top:1.6vh;font-size:.95em;max-width:62em}
+
+/* Rangliste */
+.rang{max-width:58em;width:100%;margin:2vh auto 0;display:flex;flex-direction:column;gap:.7em}
+.rang div{display:grid;grid-template-columns:2.5em 1fr auto auto;gap:1em;align-items:center;background:var(--graublau);border-radius:999px;padding:.6em 1.6em;font-size:1.25em;font-weight:700;animation:rein .35s ease both}
+.rang div:nth-child(1){background:var(--navy);color:#fff}
+.rang div:nth-child(2){background:var(--rosa)}
+.rang div .nr{font-family:var(--title)}
+.rang div .plus{color:var(--koralle);font-size:.8em}
+.rang div:nth-child(1) .plus{color:var(--rosa)}
+.rang div .pk{font-family:var(--title);min-width:4.5em;text-align:right}
+
+/* Ende */
+.podest{display:flex;align-items:flex-end;justify-content:center;gap:1.5vw;height:50vh;margin-top:auto}
+.podest > div{width:clamp(120px,16vw,320px);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.podest .name{font-weight:700;font-size:1.3em;text-align:center;margin-bottom:.2em;animation:pop .5s ease both}
+.podest .pk{font-family:var(--title);color:var(--koralle);margin-bottom:.5em}
+.podest .sockel{width:100%;display:flex;flex-direction:row;align-items:flex-start;justify-content:center;padding-top:.4em;font-family:var(--title);font-weight:700;font-size:3em;animation:wachsen .8s ease both;transform-origin:bottom}
+.podest .p1 .sockel{height:62%;background:var(--navy);color:var(--rosa)}
+.podest .p2 .sockel{height:44%;background:var(--rosa)}
+.podest .p3 .sockel{height:30%;background:var(--graublau)}
+@keyframes wachsen{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+.rest{display:flex;flex-wrap:wrap;gap:.5em;justify-content:center;margin-top:2vh;font-size:.85em}
+.rest span{border:2px solid var(--rosa);border-radius:999px;padding:.2em .9em}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="kopf">
+    <span class="kurs" id="kurs">Live-Quiz</span>
+    <div class="rechts"><span class="pill koralle" id="status">Lobby</span></div>
+  </header>
+  <main id="main"></main>
+</div>
+
+<script>
+const FORMEN = [
+  '<svg class="form" viewBox="0 0 24 24"><path d="M12 3 22 20H2z"/></svg>',
+  '<svg class="form" viewBox="0 0 24 24"><path d="M12 2 22 12 12 22 2 12z"/></svg>',
+  '<svg class="form" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>',
+  '<svg class="form" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18"/></svg>'
+];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const $ = s => document.querySelector(s);
+let Z = null, ansicht = "", frist = 0, primaer = null;
+
+async function aktion(aktion, wert){
+  const phase = (aktion === "weiter" || aktion === "start") ? Z.phase : undefined;
+  await fetch("/api/host/aktion", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({aktion, wert, phase})});
+  hole();
+}
+
+async function hole(){
+  try{
+    const r = await fetch("/api/host/zustand", {cache:"no-store"});
+    if (r.status === 403){ document.body.innerHTML = "<p style='padding:2em'>Diese Ansicht ist nur auf dem PC der Lehrperson verfügbar.</p>"; return; }
+    Z = await r.json();
+    if (Z.rest_ms !== undefined) frist = performance.now() + Z.rest_ms;
+    zeichne();
+  }catch(e){ $("#status").textContent = "Keine Verbindung"; }
+}
+
+function schluessel(){
+  if (Z.phase === "lobby") return "lobby|" + Z.spieler.map(s=>s.id).join(",") + "|" + Z.sekunden;
+  if (Z.phase === "frage") return "frage|" + Z.runde;
+  if (Z.phase === "aufloesung") return "auf|" + Z.runde + "|" + Z.verteilung.join(",");
+  if (Z.phase === "rangliste") return "rang|" + Z.runde;
+  return "ende|" + (Z.rangliste||[]).length;
+}
+
+function zeichne(){
+  $("#kurs").textContent = Z.titel;
+  const st = {lobby:"Lobby", frage:`Frage ${Z.qi+1} / ${Z.anzahl}`, aufloesung:`Frage ${Z.qi+1} / ${Z.anzahl}`, rangliste:"Rangliste", ende:"Endergebnis"}[Z.phase];
+  $("#status").textContent = st;
+  if (Z.phase === "frage"){ $("#antw-n") && ($("#antw-n").textContent = Z.beantwortet); }
+  const k = schluessel();
+  if (k === ansicht) return;
+  ansicht = k;
+  ({lobby, frage, aufloesung, rangliste, ende})[Z.phase]();
+}
+
+function lobby(){
+  const sek = [10,15,20,30,45,60].map(s => `<option value="${s}" ${s===Z.sekunden?"selected":""}>${s} Sekunden</option>`).join("");
+  $("#main").innerHTML = `
+  <section>
+    <div class="lobby">
+      <div class="mitmachen">
+        <h2>Mitmachen mit dem Handy</h2>
+        <div class="url">${esc(Z.url.replace("http://",""))}</div>
+        <div class="qrbox"><div class="qr">${Z.qr}</div>
+          <p>QR-Code scannen oder die Adresse im Browser eingeben.<br><br>Alle im selben WLAN wie dieser PC.</p></div>
+      </div>
+      <div class="teiln">
+        <h2><b>${Z.spieler.length}</b> ${Z.spieler.length===1?"Person ist":"Personen sind"} dabei</h2>
+        ${Z.spieler.length ? `<div class="namen">${Z.spieler.map(s=>`<button data-id="${esc(s.id)}" title="Entfernen">${esc(s.name)}</button>`).join("")}</div>`
+                           : `<p class="leer">Warte auf die ersten Teilnehmenden …</p><div class="namen"></div>`}
+        <div class="einst">
+          <label>Zeit pro Frage <select id="sek">${sek}</select></label>
+          <span>${Z.anzahl} Fragen</span>
+          <button class="btn ghost klein" id="mischen">Fragen mischen</button>
+        </div>
+      </div>
+    </div>
+    <div class="fuss">
+      <span class="hinweis">Tipp: Namen anklicken, um jemanden zu entfernen. Leertaste = weiter.</span>
+      <button class="btn" id="go" ${Z.spieler.length?"":"disabled"}>Quiz starten</button>
+    </div>
+  </section>`;
+  document.querySelectorAll(".namen button").forEach(b => b.onclick = () => aktion("entfernen", b.dataset.id));
+  $("#sek").onchange = e => aktion("sekunden", +e.target.value);
+  $("#mischen").onclick = () => { aktion("mischen"); $("#mischen").textContent = "Gemischt ✓"; };
+  primaer = $("#go"); primaer.onclick = () => aktion("start");
+}
+
+function optionenHtml(markiere){
+  return `<div class="optionen">${Z.optionen.map((o,i)=>{
+    const kl = markiere ? (i===Z.richtig ? " ja" : " weg") : "";
+    return `<div class="opt o${i}${kl}">${FORMEN[i]}<span>${esc(o)}</span>${markiere && i===Z.richtig ? '<span class="haken">✓</span>':''}</div>`;
+  }).join("")}</div>`;
+}
+
+function kopfHtml(mitUhr){
+  return `<div class="fkopf"><div class="txt"><span class="pill rosa">${esc(Z.thema)}</span><span class="zaehler">${Z.qi+1} / ${Z.anzahl}</span>
+    <p class="frage">${esc(Z.frage)}</p></div>
+    ${mitUhr ? `<div class="uhr" id="uhr"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none" stroke="#E4ECF1" stroke-width="10"/><circle id="ring" cx="50" cy="50" r="44" fill="none" stroke="#D9606F" stroke-width="10" stroke-linecap="round" stroke-dasharray="276.5" stroke-dashoffset="0"/></svg><span id="sek">${Z.sekunden}</span></div>`:""}
+  </div>`;
+}
+
+function frage(){
+  $("#main").innerHTML = `<section>
+    ${kopfHtml(true)}
+    <div class="mitte">
+      ${Z.bild ? `<div class="bild">${Z.bild}</div>`:""}
+      <div class="antw-info"><b id="antw-n">${Z.beantwortet}</b><span>von ${Z.spieler.length} Antworten</span></div>
+    </div>
+    ${optionenHtml(false)}
+    <div class="fuss"><span class="hinweis">Die Frage wird automatisch aufgelöst, wenn die Zeit abläuft oder alle geantwortet haben.</span><button class="btn ghost klein" id="go">Jetzt auflösen</button></div>
+  </section>`;
+  primaer = $("#go"); primaer.onclick = () => aktion("weiter");
+}
+
+function aufloesung(){
+  const max = Math.max(1, ...Z.verteilung);
+  const letzte = Z.qi >= Z.anzahl - 1;
+  $("#main").innerHTML = `<section>
+    ${kopfHtml(false)}
+    <div class="mitte">
+      ${Z.bild ? `<div class="bild">${Z.bild}</div>`:""}
+      <div class="balken">${Z.verteilung.map((n,i)=>`<div class="o${i} ${i===Z.richtig?"":"weg"}"><b>${n}</b><i style="height:${Math.round(n/max*100)}%"></i></div>`).join("")}</div>
+    </div>
+    ${optionenHtml(true)}
+    ${Z.erklaerung ? `<div class="erkl">${esc(Z.erklaerung)}</div>`:""}
+    <div class="fuss"><button class="btn" id="go">${letzte ? "Zum Endergebnis" : "Rangliste"}</button></div>
+  </section>`;
+  primaer = $("#go"); primaer.onclick = () => aktion("weiter");
+}
+
+function rangliste(){
+  const top = Z.rangliste.slice(0, 5);
+  $("#main").innerHTML = `<section>
+    <h1 style="font-size:2.2em;text-align:center;margin-top:2vh">Rangliste</h1>
+    <div class="rang">${top.map((r,i)=>`<div style="animation-delay:${i*90}ms"><span class="nr">${i+1}.</span><span>${esc(r.name)}</span><span class="plus">${r.letzte?"+"+r.letzte:""}</span><span class="pk">${r.punkte}</span></div>`).join("") || "<p class='leer'>Noch keine Punkte.</p>"}</div>
+    <div class="fuss" style="margin-top:auto"><span class="hinweis">Noch ${Z.anzahl - Z.qi - 1} Fragen</span><button class="btn ghost klein" id="stopp">Quiz beenden</button><button class="btn" id="go">Nächste Frage</button></div>
+  </section>`;
+  $("#stopp").onclick = () => aktion("beenden");
+  primaer = $("#go"); primaer.onclick = () => aktion("weiter");
+}
+
+function ende(){
+  const r = Z.rangliste || [];
+  const p = i => r[i] ? `<div class="p${i+1}"><span class="name">${esc(r[i].name)}</span><span class="pk">${r[i].punkte} Punkte</span><div class="sockel">${i+1}</div></div>` : `<div class="p${i+1}"></div>`;
+  $("#main").innerHTML = `<section>
+    <h1 style="font-size:2.2em;text-align:center;margin-top:1vh">Gratulation!</h1>
+    <div class="podest">${p(1)}${p(0)}${p(2)}</div>
+    <div class="rest">${r.slice(3).map((x,i)=>`<span>${i+4}. ${esc(x.name)} · ${x.punkte}</span>`).join("")}</div>
+    <div class="fuss"><button class="btn ghost klein" id="lob">Zur Lobby</button><button class="btn" id="go">Nochmals spielen</button></div>
+  </section>`;
+  $("#lob").onclick = () => aktion("lobby");
+  primaer = $("#go"); primaer.onclick = () => aktion("start");
+}
+
+function uhrLoop(){
+  if (Z && Z.phase === "frage" && $("#ring")){
+    const rest = Math.max(0, frist - performance.now());
+    const anteil = Math.min(1, rest / (Z.sekunden * 1000));
+    $("#ring").setAttribute("stroke-dashoffset", (276.5 * (1 - anteil)).toFixed(1));
+    const s = Math.ceil(rest / 1000);
+    $("#sek").textContent = Math.min(s, Z.sekunden);
+    $("#uhr").classList.toggle("knapp", s <= 5);
+  }
+  requestAnimationFrame(uhrLoop);
+}
+
+document.addEventListener("keydown", e => {
+  if (["SELECT","INPUT","BUTTON"].includes(e.target.tagName)) return;
+  if ((e.key === " " || e.key === "Enter" || e.key === "ArrowRight") && primaer && !primaer.disabled && document.body.contains(primaer)){
+    e.preventDefault(); primaer.click();
+  }
+});
+
+hole(); setInterval(hole, 450); requestAnimationFrame(uhrLoop);
+</script>
+</body>
+</html>

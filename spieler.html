@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1B237A">
+<title>Live-Quiz</title>
+<link rel="stylesheet" href="/static/stil.css">
+<style>
+body{font-size:17px;min-height:100dvh;display:flex;flex-direction:column;-webkit-tap-highlight-color:transparent}
+.kopf{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;background:var(--navy);color:#fff}
+.kopf .wer{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kopf .pk{font-family:var(--title);font-weight:700;color:var(--rosa);white-space:nowrap}
+main{flex:1;display:flex;flex-direction:column;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
+section{flex:1;display:flex;flex-direction:column;animation:rein .25s ease}
+.zentriert{justify-content:center;align-items:center;text-align:center;gap:14px}
+
+/* Beitreten */
+.hero{margin:6vh 0 4vh}
+.hero .r{background:var(--rosa);padding:18px 18px 46px;width:82%}
+.hero .r small{font-weight:700;display:block}
+.hero .n{background:var(--navy);color:var(--rosa);padding:20px 18px;margin:-30px 0 0 12%;text-align:right}
+.hero .n h1{font-size:30px;text-transform:none}
+form{display:flex;flex-direction:column;gap:12px}
+input{border:2px solid var(--rosa);border-radius:999px;padding:14px 22px;font-size:18px;font-weight:600;outline:none;background:#fff}
+input:focus{border-color:var(--navy)}
+.fehler{color:var(--koralle);font-weight:600;min-height:1.4em}
+
+/* Warten */
+.gross{font-family:var(--title);font-weight:700;text-transform:uppercase;font-size:26px;line-height:1.15}
+.punkt{width:14px;height:14px;border-radius:50%;background:var(--koralle);display:inline-block;margin:0 4px;animation:hupf 1s infinite ease-in-out}
+.punkt:nth-child(2){animation-delay:.15s}.punkt:nth-child(3){animation-delay:.3s}
+@keyframes hupf{0%,80%,100%{transform:scale(.5);opacity:.4}40%{transform:scale(1);opacity:1}}
+
+/* Frage */
+.fkopf{display:flex;justify-content:space-between;align-items:center;font-family:var(--title);font-weight:700;color:var(--koralle);font-size:15px}
+.zeit{height:8px;background:var(--graublau);border-radius:999px;overflow:hidden;margin:10px 0 12px}
+.zeit i{display:block;height:100%;background:var(--koralle);border-radius:999px;width:100%}
+.ftext{font-weight:600;font-size:17px;line-height:1.3;margin-bottom:14px}
+.tasten{flex:1;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:10px;min-height:52vh}
+.taste{background:var(--bg);color:var(--fg);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:12px;font-weight:700;font-size:16px;line-height:1.25;text-align:center;transition:transform .1s}
+.taste:active{transform:scale(.96)}
+.taste .form{width:34px;height:34px}
+
+/* Resultat */
+.res{border-radius:0;margin:-18px -16px;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px;padding:30px 24px}
+.res.gut{background:var(--navy);color:#fff}
+.res.schlecht{background:var(--koralle);color:#fff}
+.res .gross{font-size:36px}
+.res .plus{font-family:var(--title);font-weight:700;font-size:28px;background:rgba(255,255,255,.16);border-radius:999px;padding:6px 22px}
+.res .gut-text{color:var(--rosa)}
+.res .richtig{background:#fff;color:var(--navy);border-radius:14px;padding:10px 16px;font-weight:700;max-width:100%}
+.platz{font-family:var(--title);font-weight:700;font-size:20px}
+.symbol{font-size:64px;line-height:1;animation:pop .4s ease}
+</style>
+</head>
+<body>
+<header class="kopf hidden" id="kopf"><span class="wer" id="wer"></span><span class="pk" id="pk"></span></header>
+<main id="main"></main>
+
+<script>
+const FORMEN = [
+  '<svg class="form" viewBox="0 0 24 24"><path d="M12 3 22 20H2z"/></svg>',
+  '<svg class="form" viewBox="0 0 24 24"><path d="M12 2 22 12 12 22 2 12z"/></svg>',
+  '<svg class="form" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>',
+  '<svg class="form" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18"/></svg>'
+];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const $ = s => document.querySelector(s);
+const speicher = {
+  get(){ try { return localStorage.getItem("quiz_id") || ""; } catch(e){ return window._id || ""; } },
+  set(v){ try { localStorage.setItem("quiz_id", v); } catch(e){ window._id = v; } },
+  weg(){ try { localStorage.removeItem("quiz_id"); } catch(e){ window._id = ""; } }
+};
+let id = speicher.get(), Z = null, ansicht = "", frist = 0, gesendet = -1, timer = null;
+
+function beitretenAnzeigen(fehler){
+  ansicht = "join";
+  $("#kopf").classList.add("hidden");
+  $("#main").innerHTML = `<section>
+    <div class="hero"><div class="r"><small>Live-Quiz</small><b>Bauliche Kenntnisse</b></div><div class="n"><h1>Mitspielen</h1></div></div>
+    <form id="f">
+      <input id="name" maxlength="20" placeholder="Dein Name" autocomplete="nickname" autocapitalize="words" required>
+      <button class="btn" type="submit">Los geht's</button>
+      <p class="fehler" id="fehler">${esc(fehler||"")}</p>
+    </form></section>`;
+  $("#f").onsubmit = async e => {
+    e.preventDefault();
+    const name = $("#name").value.trim();
+    if (!name) return;
+    try{
+      const r = await fetch("/api/beitreten", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({name})});
+      const d = await r.json();
+      if (!r.ok){ $("#fehler").textContent = d.fehler || "Hat nicht geklappt."; return; }
+      id = d.id; speicher.set(id); ansicht = ""; hole();
+    }catch(err){ $("#fehler").textContent = "Keine Verbindung zum Quiz."; }
+  };
+}
+
+async function hole(){
+  if (!id){ if (ansicht !== "join") beitretenAnzeigen(); return; }
+  try{
+    const r = await fetch("/api/zustand?id=" + encodeURIComponent(id), {cache:"no-store"});
+    Z = await r.json();
+  }catch(e){ return; }
+  if (Z.phase === "unbekannt"){ id = ""; speicher.weg(); beitretenAnzeigen(); return; }
+  if (Z.rest_ms !== undefined) frist = performance.now() + Z.rest_ms;
+  $("#kopf").classList.remove("hidden");
+  $("#wer").textContent = Z.name;
+  $("#pk").textContent = Z.punkte + " Pkt.";
+  let k = Z.phase + "|" + Z.runde;
+  if (Z.phase === "frage") k += "|" + (Z.beantwortet || gesendet === Z.runde ? "w" : "a");
+  if (k === ansicht) return;
+  ansicht = k;
+  ({lobby, frage, aufloesung, rangliste:aufloesung, ende})[Z.phase]();
+}
+
+function lobby(){
+  $("#main").innerHTML = `<section class="zentriert">
+    <div class="symbol">✓</div>
+    <p class="gross">Du bist dabei,<br>${esc(Z.name)}!</p>
+    <p>Schau auf die Leinwand. Das Quiz startet gleich.</p>
+    <p><span class="punkt"></span><span class="punkt"></span><span class="punkt"></span></p>
+  </section>`;
+}
+
+function frage(){
+  if (Z.beantwortet || gesendet === Z.runde){
+    $("#main").innerHTML = `<section class="zentriert">
+      <p class="gross">Antwort ist drin!</p><p>Mal sehen, ob sie stimmt …</p>
+      <p><span class="punkt"></span><span class="punkt"></span><span class="punkt"></span></p></section>`;
+    return;
+  }
+  $("#main").innerHTML = `<section>
+    <div class="fkopf"><span>Frage ${Z.qi+1} / ${Z.anzahl}</span><span id="sek"></span></div>
+    <div class="zeit"><i id="balken"></i></div>
+    <p class="ftext">${esc(Z.frage)}</p>
+    <div class="tasten">${Z.optionen.map((o,i)=>`<button class="taste o${i}" data-i="${i}">${FORMEN[i]}<span>${esc(o)}</span></button>`).join("")}</div>
+  </section>`;
+  const runde = Z.runde, qi = Z.qi;
+  document.querySelectorAll(".taste").forEach(b => b.onclick = async () => {
+    if (gesendet === runde) return;
+    gesendet = runde;
+    if (navigator.vibrate) navigator.vibrate(30);
+    ansicht = ""; frage();
+    try{ await fetch("/api/antwort", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({id, qi, wahl:+b.dataset.i})}); }catch(e){}
+    hole();
+  });
+}
+
+function aufloesung(){
+  const platz = Z.rang ? `<p class="platz">Platz ${Z.rang} von ${Z.von}</p>` : "";
+  if (Z.ok){
+    $("#main").innerHTML = `<section><div class="res gut">
+      <div class="symbol">✓</div><p class="gross">Richtig!</p>
+      <span class="plus">+${Z.pkt}</span>
+      ${Z.serie >= 2 ? `<p class="gut-text">${Z.serie} richtige in Folge!</p>`:""}
+      ${platz}</div></section>`;
+  } else {
+    $("#main").innerHTML = `<section><div class="res schlecht">
+      <div class="symbol">${Z.gewaehlt === null ? "⏱" : "✗"}</div>
+      <p class="gross">${Z.gewaehlt === null ? "Zu spät" : "Leider falsch"}</p>
+      <p>Richtig wäre:</p><div class="richtig">${esc(Z.optionen[Z.richtig])}</div>
+      ${platz}</div></section>`;
+  }
+}
+
+function ende(){
+  const medaille = {1:"🥇",2:"🥈",3:"🥉"}[Z.rang] || "🎉";
+  $("#main").innerHTML = `<section><div class="res gut">
+    <div class="symbol">${medaille}</div>
+    <p class="gross">Platz ${Z.rang || "–"}</p>
+    <p class="gut-text">von ${Z.von} Teilnehmenden</p>
+    <span class="plus">${Z.punkte} Punkte</span>
+    <p>Danke fürs Mitspielen, ${esc(Z.name)}!</p></div></section>`;
+}
+
+function zeitLoop(){
+  if (Z && Z.phase === "frage" && $("#balken")){
+    const rest = Math.max(0, frist - performance.now());
+    $("#balken").style.width = Math.min(100, rest / (Z.sekunden*1000) * 100) + "%";
+    $("#sek").textContent = Math.min(Z.sekunden, Math.ceil(rest/1000)) + " s";
+  }
+  requestAnimationFrame(zeitLoop);
+}
+
+hole(); setInterval(hole, 700); requestAnimationFrame(zeitLoop);
+</script>
+</body>
+</html>
