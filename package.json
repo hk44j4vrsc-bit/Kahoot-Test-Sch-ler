@@ -1,0 +1,6 @@
+{
+  "name": "live-quiz",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=18" }
+}

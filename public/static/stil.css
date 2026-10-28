@@ -1,0 +1,34 @@
+@font-face{font-family:"Josefin Sans";font-weight:100 700;font-display:swap;src:url(/static/josefin.woff2) format("woff2")}
+@font-face{font-family:"Open Sans";font-weight:300 800;font-display:swap;src:url(/static/opensans.woff2) format("woff2")}
+:root{
+  --navy:#1B237A; --rosa:#F0C4BE; --koralle:#D9606F; --graublau:#E4ECF1; --sand:#FAF8F5; --weiss:#FFFFFF;
+  --title:"Josefin Sans","Century Gothic",Futura,Arial,sans-serif;
+  --text:"Open Sans",Arial,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--weiss);color:var(--navy);font-family:var(--text);line-height:1.45;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+h1,h2,h3,.titel{font-family:var(--title);font-weight:700;text-transform:uppercase;letter-spacing:.02em;line-height:1.1}
+.hidden{display:none!important}
+.pill{display:inline-block;border-radius:999px;padding:.35em 1.1em;font-weight:700;font-size:.8em;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
+.pill.rosa{background:var(--rosa);color:var(--navy)}
+.pill.koralle{background:var(--koralle);color:var(--weiss)}
+.pill.navy{background:var(--navy);color:var(--weiss)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.6em;background:var(--navy);color:var(--weiss);border-radius:999px;padding:.8em 2em;font-family:var(--title);font-weight:700;text-transform:uppercase;letter-spacing:.06em;transition:transform .12s,background .15s}
+.btn:hover{background:#2A3396}
+.btn:active{transform:scale(.97)}
+.btn.ghost{background:transparent;color:var(--navy);border:2px solid var(--navy)}
+.btn.koralle{background:var(--koralle)}
+.btn[disabled]{opacity:.4;cursor:default}
+
+/* Antwortfarben: Position A bis D */
+.o0{--bg:var(--navy);--fg:var(--weiss)}
+.o1{--bg:var(--koralle);--fg:var(--weiss)}
+.o2{--bg:var(--rosa);--fg:var(--navy)}
+.o3{--bg:var(--graublau);--fg:var(--navy)}
+.form{width:1.4em;height:1.4em;flex:0 0 auto;fill:currentColor}
+@keyframes rein{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes pop{0%{transform:scale(.85);opacity:0}60%{transform:scale(1.04);opacity:1}100%{transform:scale(1)}}

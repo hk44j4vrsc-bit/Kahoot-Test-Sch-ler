@@ -4,7 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live-Quiz Lehrperson</title>
+<meta name="robots" content="noindex">
 <link rel="stylesheet" href="/static/stil.css">
+<script src="/static/qr.js"></script>
 <style>
 body{font-size:clamp(14px,1.25vw,26px);overflow-x:hidden}
 .app{min-height:100vh;display:flex;flex-direction:column;padding:2.2vh 3vw 3vh}
@@ -106,28 +108,59 @@ const FORMEN = [
   '<svg class="form" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>',
   '<svg class="form" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18"/></svg>'
 ];
-const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const $ = s => document.querySelector(s);
 let Z = null, ansicht = "", frist = 0, primaer = null;
+const URL_HANDY = location.origin;
+const QR = qrSvg(URL_HANDY);
+// /host?set=bauprozess wählt beim Öffnen direkt diesen Fragensatz (nur in der Lobby oder am Ende)
+let wunschSatz = new URLSearchParams(location.search).get("set") || "";
+const pin = {
+  get(){ try { return localStorage.getItem("quiz_pin") || ""; } catch(e){ return window._pin || ""; } },
+  set(v){ try { localStorage.setItem("quiz_pin", v); } catch(e){ window._pin = v; } }
+};
+const kopf = () => ({"Content-Type":"application/json", "x-pin": pin.get()});
+
+function pinFrage(text){
+  ansicht = "pin";
+  $("#status").textContent = "Anmelden";
+  $("#main").innerHTML = `<section style="align-items:center;justify-content:center;text-align:center;gap:1.2em">
+    <h1 style="font-size:2em">Lehrperson</h1><p>${text}</p>
+    <form id="pf" style="display:flex;gap:.8em;flex-wrap:wrap;justify-content:center">
+      <input id="pin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="PIN"
+        style="border:2px solid var(--rosa);border-radius:999px;padding:.6em 1.4em;font-size:1.2em;width:10em;text-align:center">
+      <button class="btn" type="submit">Weiter</button></form></section>`;
+  $("#pin").focus();
+  $("#pf").onsubmit = e => { e.preventDefault(); pin.set($("#pin").value.trim()); ansicht = ""; hole(); };
+}
 
 async function aktion(aktion, wert){
   const phase = (aktion === "weiter" || aktion === "start") ? Z.phase : undefined;
-  await fetch("/api/host/aktion", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({aktion, wert, phase})});
+  await fetch("/api/host/aktion", {method:"POST", headers:kopf(), body:JSON.stringify({aktion, wert, phase})});
   hole();
 }
 
 async function hole(){
   try{
-    const r = await fetch("/api/host/zustand", {cache:"no-store"});
-    if (r.status === 403){ document.body.innerHTML = "<p style='padding:2em'>Diese Ansicht ist nur auf dem PC der Lehrperson verfügbar.</p>"; return; }
-    Z = await r.json();
+    if (ansicht === "pin") return;
+    if (!pin.get()) return pinFrage("Bitte gib deinen PIN ein.");
+    const r = await fetch("/api/host/zustand", {cache:"no-store", headers:kopf()});
+    const d = await r.json();
+    if (r.status === 401) return pinFrage("Der PIN stimmt nicht. Bitte nochmals eingeben.");
+    if (r.status === 503 && d.fehler === "pin_fehlt"){ $("#main").innerHTML = "<section><h2>Noch kein PIN eingerichtet</h2><p style='margin-top:1em'>In Vercel unter Settings → Environment Variables die Variable <b>LEHRER_PIN</b> anlegen und neu deployen.</p></section>"; ansicht="x"; return; }
+    if (!r.ok) throw new Error(d.fehler || r.status);
+    Z = d;
+    if (wunschSatz && (Z.phase === "lobby" || Z.phase === "ende")){
+      const w = wunschSatz; wunschSatz = "";
+      if (w !== Z.satz && (Z.saetze||[]).some(x => x.id === w)) return aktion("satz", w);
+    }
     if (Z.rest_ms !== undefined) frist = performance.now() + Z.rest_ms;
     zeichne();
   }catch(e){ $("#status").textContent = "Keine Verbindung"; }
 }
 
 function schluessel(){
-  if (Z.phase === "lobby") return "lobby|" + Z.spieler.map(s=>s.id).join(",") + "|" + Z.sekunden;
+  if (Z.phase === "lobby") return "lobby|" + Z.satz + "|" + Z.spieler.map(s=>s.id).join(",") + "|" + Z.sekunden;
   if (Z.phase === "frage") return "frage|" + Z.runde;
   if (Z.phase === "aufloesung") return "auf|" + Z.runde + "|" + Z.verteilung.join(",");
   if (Z.phase === "rangliste") return "rang|" + Z.runde;
@@ -152,18 +185,23 @@ function lobby(){
     <div class="lobby">
       <div class="mitmachen">
         <h2>Mitmachen mit dem Handy</h2>
-        <div class="url">${esc(Z.url.replace("http://",""))}</div>
-        <div class="qrbox"><div class="qr">${Z.qr}</div>
-          <p>QR-Code scannen oder die Adresse im Browser eingeben.<br><br>Alle im selben WLAN wie dieser PC.</p></div>
+        <div class="url">${esc(URL_HANDY.replace(/^https?:\/\//,""))}</div>
+        <div class="qrbox"><div class="qr">${QR}</div>
+          <p>QR-Code scannen oder die Adresse im Browser eingeben.<br><br>Geht im WLAN und über Mobilfunk.</p></div>
       </div>
       <div class="teiln">
         <h2><b>${Z.spieler.length}</b> ${Z.spieler.length===1?"Person ist":"Personen sind"} dabei</h2>
         ${Z.spieler.length ? `<div class="namen">${Z.spieler.map(s=>`<button data-id="${esc(s.id)}" title="Entfernen">${esc(s.name)}</button>`).join("")}</div>`
                            : `<p class="leer">Warte auf die ersten Teilnehmenden …</p><div class="namen"></div>`}
         <div class="einst">
+          ${(Z.saetze||[]).length > 1 ? `<label>Fragen <select id="satz">${Z.saetze.map(x => `<option value="${esc(x.id)}" ${x.id===Z.satz?"selected":""}>${esc(x.titel)}</option>`).join("")}</select></label>` : ""}
           <label>Zeit pro Frage <select id="sek">${sek}</select></label>
           <span>${Z.anzahl} Fragen</span>
           <button class="btn ghost klein" id="mischen">Fragen mischen</button>
+          ${Z.spieler.length ? '<button class="btn ghost klein" id="alleweg">Alle entfernen</button>' : ''}
+        </div>
+        ${Z.speicher === false ? '<p class="leer" style="color:var(--koralle)">Hinweis: Kein Speicher verbunden (Upstash Redis). Bitte in Vercel unter Storage hinzufügen.</p>' : ''}
+        <div>
         </div>
       </div>
     </div>
@@ -173,8 +211,10 @@ function lobby(){
     </div>
   </section>`;
   document.querySelectorAll(".namen button").forEach(b => b.onclick = () => aktion("entfernen", b.dataset.id));
+  if ($("#satz")) $("#satz").onchange = e => aktion("satz", e.target.value);
   $("#sek").onchange = e => aktion("sekunden", +e.target.value);
   $("#mischen").onclick = () => { aktion("mischen"); $("#mischen").textContent = "Gemischt ✓"; };
+  if ($("#alleweg")) $("#alleweg").onclick = () => { if (confirm("Alle Teilnehmenden entfernen?")) aktion("alle_entfernen"); };
   primaer = $("#go"); primaer.onclick = () => aktion("start");
 }
 
@@ -264,7 +304,7 @@ document.addEventListener("keydown", e => {
   }
 });
 
-hole(); setInterval(hole, 450); requestAnimationFrame(uhrLoop);
+hole(); setInterval(hole, 1000); requestAnimationFrame(uhrLoop);
 </script>
 </body>
 </html>
