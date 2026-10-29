@@ -42,6 +42,13 @@ input:focus{border-color:var(--navy)}
 .taste{background:var(--bg);color:var(--fg);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:12px;font-weight:700;font-size:16px;line-height:1.25;text-align:center;transition:transform .1s}
 .taste:active{transform:scale(.96)}
 .taste .form{width:34px;height:34px}
+.liste{display:flex;flex-direction:column;gap:8px;flex:1}
+.ltaste{display:flex;align-items:center;gap:12px;background:var(--graublau);color:var(--navy);border-radius:14px;padding:12px 14px;font-weight:700;font-size:16px;text-align:left}
+.ltaste .nr{width:30px;height:30px;border-radius:50%;border:2px dashed var(--navy);display:grid;place-items:center;flex:none;font-family:var(--title)}
+.ltaste.an{background:var(--navy);color:#fff}.ltaste.an .nr{border:0;background:var(--rosa);color:var(--navy)}
+.lknoepfe{display:flex;gap:10px;margin-top:12px}.lknoepfe button{flex:1;border-radius:999px;padding:14px;font-weight:700;font-family:var(--title);text-transform:uppercase;letter-spacing:.05em}
+#lsenden{background:var(--koralle);color:#fff}#lsenden:disabled{opacity:.35}#lneu{background:var(--graublau);color:var(--navy)}
+.res ol{text-align:left;background:#fff;color:var(--navy);border-radius:14px;padding:10px 16px 10px 36px;font-weight:700;line-height:1.6}
 
 /* Resultat */
 .res{border-radius:0;margin:-18px -16px;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px;padding:30px 24px}
@@ -136,6 +143,7 @@ function frage(){
       <p><span class="punkt"></span><span class="punkt"></span><span class="punkt"></span></p></section>`;
     return;
   }
+  if (Z.typ === "reihenfolge") return frageReihe();
   $("#main").innerHTML = `<section>
     <div class="fkopf"><span>Frage ${Z.qi+1} / ${Z.anzahl}</span><span id="sek"></span></div>
     <div class="zeit"><i id="balken"></i></div>
@@ -143,14 +151,43 @@ function frage(){
     <div class="tasten">${Z.optionen.map((o,i)=>`<button class="taste o${i}" data-i="${i}">${FORMEN[i]}<span>${esc(o)}</span></button>`).join("")}</div>
   </section>`;
   const runde = Z.runde, qi = Z.qi;
-  document.querySelectorAll(".taste").forEach(b => b.onclick = async () => {
-    if (gesendet === runde) return;
-    gesendet = runde;
-    if (navigator.vibrate) navigator.vibrate(30);
-    ansicht = ""; frage();
-    try{ await fetch("/api/antwort", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({id, qi, wahl:+b.dataset.i})}); }catch(e){}
-    hole();
+  document.querySelectorAll(".taste").forEach(b => b.onclick = () => sende(runde, qi, +b.dataset.i));
+}
+
+async function sende(runde, qi, wahl){
+  if (gesendet === runde) return;
+  gesendet = runde;
+  if (navigator.vibrate) navigator.vibrate(30);
+  ansicht = ""; frage();
+  try{ await fetch("/api/antwort", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({id, qi, wahl})}); }catch(e){}
+  hole();
+}
+
+// Reihenfolge: der Reihe nach antippen, nochmals tippen nimmt den Eintrag (und alle danach) wieder weg
+function frageReihe(){
+  const runde = Z.runde, qi = Z.qi, wahl = [];
+  $("#main").innerHTML = `<section>
+    <div class="fkopf"><span>Frage ${Z.qi+1} / ${Z.anzahl}</span><span id="sek"></span></div>
+    <div class="zeit"><i id="balken"></i></div>
+    <p class="ftext">${esc(Z.frage)}</p>
+    <div class="liste">${Z.optionen.map((o,i)=>`<button class="ltaste" data-i="${i}"><span class="nr"></span><span>${esc(o)}</span></button>`).join("")}</div>
+    <div class="lknoepfe"><button id="lneu">Neu</button><button id="lsenden" disabled>Senden</button></div>
+  </section>`;
+  const zeige = () => {
+    document.querySelectorAll(".ltaste").forEach(b => {
+      const p = wahl.indexOf(+b.dataset.i);
+      b.classList.toggle("an", p >= 0);
+      b.querySelector(".nr").textContent = p >= 0 ? p + 1 : "";
+    });
+    $("#lsenden").disabled = wahl.length !== Z.optionen.length;
+  };
+  document.querySelectorAll(".ltaste").forEach(b => b.onclick = () => {
+    const i = +b.dataset.i, p = wahl.indexOf(i);
+    if (p >= 0) wahl.splice(p); else wahl.push(i);
+    zeige();
   });
+  $("#lneu").onclick = () => { wahl.length = 0; zeige(); };
+  $("#lsenden").onclick = () => sende(runde, qi, wahl.slice());
 }
 
 function aufloesung(){
@@ -165,7 +202,7 @@ function aufloesung(){
     $("#main").innerHTML = `<section><div class="res schlecht">
       <div class="symbol">${Z.gewaehlt === null ? "⏱" : "✗"}</div>
       <p class="gross">${Z.gewaehlt === null ? "Zu spät" : "Leider falsch"}</p>
-      <p>Richtig wäre:</p><div class="richtig">${esc(Z.optionen[Z.richtig])}</div>
+      <p>Richtig wäre:</p>${Z.loesung ? `<ol>${Z.loesung.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>` : `<div class="richtig">${esc(Z.optionen[Z.richtig])}</div>`}
       ${platz}</div></section>`;
   }
 }

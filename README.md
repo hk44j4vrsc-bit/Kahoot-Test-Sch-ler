@@ -33,7 +33,7 @@ Es gibt vier Sätze, passend zu den Vertiefungen von Abend 1:
 | Satz | Thema | Aufruf |
 |---|---|---|
 | `abend1` | Gesamtquiz Abend 1 (24 Fragen, Standard) | `/host` |
-| `bauprozess` | 03 Bauprozess «Welche Phase?» (8) | `/host?set=bauprozess` |
+| `bauprozess` | 03 Bauprozess: Phasen ordnen + «Welche Phase?» (10) | `/host?set=bauprozess` |
 | `baurecht` | 04 «Baurecht kompakt» (10, Rechenfragen mit mehr Zeit) | `/host?set=baurecht` |
 | `baubewilligung` | 05 «Bewilligung kompakt» (8) | `/host?set=baubewilligung` |
 

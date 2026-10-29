@@ -66,6 +66,11 @@ section{flex:1;display:flex;flex-direction:column;animation:rein .3s ease}
 .balken i{display:block;width:100%;background:var(--bg);border-radius:10px 10px 0 0;min-height:8px;transition:height .6s ease}
 .balken b{font-family:var(--title);font-size:1.8em;margin-bottom:.2em}
 .balken .weg{opacity:.3}
+.balken .gut i{background:var(--navy)}.balken .schlecht i{background:var(--koralle)}.balken span{font-weight:700;margin-top:.3em}
+.reihe{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2vw;counter-reset:nr}
+.reihe div{background:var(--graublau);color:var(--navy);border-radius:14px;padding:1em 1.3em;font-weight:700;font-size:1.25em;min-height:9vh;display:flex;align-items:center;gap:.8em}
+.reihe.loes div{background:var(--navy);color:#fff;animation:rein .35s ease both}
+.reihe.loes div::before{counter-increment:nr;content:counter(nr);font-family:var(--title);color:var(--rosa);font-size:1.5em}
 .erkl{background:var(--sand);border-left:6px solid var(--navy);border-radius:12px;padding:.9em 1.2em;margin-top:1.6vh;font-size:.95em;max-width:62em}
 
 /* Rangliste */
@@ -162,7 +167,7 @@ async function hole(){
 function schluessel(){
   if (Z.phase === "lobby") return "lobby|" + Z.satz + "|" + Z.spieler.map(s=>s.id).join(",") + "|" + Z.sekunden;
   if (Z.phase === "frage") return "frage|" + Z.runde;
-  if (Z.phase === "aufloesung") return "auf|" + Z.runde + "|" + Z.verteilung.join(",");
+  if (Z.phase === "aufloesung") return "auf|" + Z.runde + "|" + (Z.verteilung ? Z.verteilung.join(",") : Z.gut + "-" + Z.schlecht);
   if (Z.phase === "rangliste") return "rang|" + Z.runde;
   return "ende|" + (Z.rangliste||[]).length;
 }
@@ -239,13 +244,18 @@ function frage(){
       ${Z.bild ? `<div class="bild">${Z.bild}</div>`:""}
       <div class="antw-info"><b id="antw-n">${Z.beantwortet}</b><span>von ${Z.spieler.length} Antworten</span></div>
     </div>
-    ${optionenHtml(false)}
+    ${Z.typ === "reihenfolge" ? reiheHtml(Z.optionen, false) : optionenHtml(false)}
     <div class="fuss"><span class="hinweis">Die Frage wird automatisch aufgelöst, wenn die Zeit abläuft oder alle geantwortet haben.</span><button class="btn ghost klein" id="go">Jetzt auflösen</button></div>
   </section>`;
   primaer = $("#go"); primaer.onclick = () => aktion("weiter");
 }
 
+function reiheHtml(liste, loes){
+  return `<div class="reihe${loes ? " loes" : ""}">${liste.map((o,i)=>`<div style="animation-delay:${i*120}ms">${esc(o)}</div>`).join("")}</div>`;
+}
+
 function aufloesung(){
+  if (Z.typ === "reihenfolge") return aufloesungReihe();
   const max = Math.max(1, ...Z.verteilung);
   const letzte = Z.qi >= Z.anzahl - 1;
   $("#main").innerHTML = `<section>
@@ -255,6 +265,20 @@ function aufloesung(){
       <div class="balken">${Z.verteilung.map((n,i)=>`<div class="o${i} ${i===Z.richtig?"":"weg"}"><b>${n}</b><i style="height:${Math.round(n/max*100)}%"></i></div>`).join("")}</div>
     </div>
     ${optionenHtml(true)}
+    ${Z.erklaerung ? `<div class="erkl">${esc(Z.erklaerung)}</div>`:""}
+    <div class="fuss"><button class="btn" id="go">${letzte ? "Zum Endergebnis" : "Rangliste"}</button></div>
+  </section>`;
+  primaer = $("#go"); primaer.onclick = () => aktion("weiter");
+}
+
+function aufloesungReihe(){
+  const letzte = Z.qi >= Z.anzahl - 1, max = Math.max(1, Z.gut, Z.schlecht);
+  $("#main").innerHTML = `<section>
+    ${kopfHtml(false)}
+    <div class="mitte">
+      <div class="balken"><div class="gut"><b>${Z.gut}</b><i style="height:${Math.round(Z.gut/max*100)}%"></i><span>richtig</span></div><div class="schlecht"><b>${Z.schlecht}</b><i style="height:${Math.round(Z.schlecht/max*100)}%"></i><span>falsch</span></div></div>
+    </div>
+    ${reiheHtml(Z.loesung, true)}
     ${Z.erklaerung ? `<div class="erkl">${esc(Z.erklaerung)}</div>`:""}
     <div class="fuss"><button class="btn" id="go">${letzte ? "Zum Endergebnis" : "Rangliste"}</button></div>
   </section>`;
