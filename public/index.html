@@ -105,11 +105,21 @@ function beitretenAnzeigen(fehler){
   };
 }
 
+// Nach einem neuen Deploy die Seite einmal neu laden, damit alle die gleiche Version haben
+let version = "";
+function pruefeVersion(r){
+  const v = r.headers.get("X-Quiz-Version");
+  if (!v) return;
+  if (version && v !== version) location.reload();
+  version = v;
+}
+
 async function hole(){
   if (!id){ if (ansicht !== "join") beitretenAnzeigen(); return; }
   try{
     const v = Z && Z.ver ? `&ver=${Z.ver}&ph=${Z.phase}` : "";
     const r = await fetch("/api/zustand?id=" + encodeURIComponent(id) + v, {cache:"no-store"});
+    pruefeVersion(r);
     const d = await r.json();
     if (d.gleich) return;
     if (!r.ok) return;

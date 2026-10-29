@@ -145,11 +145,21 @@ async function aktion(aktion, wert){
   hole();
 }
 
+// Nach einem neuen Deploy die Seite einmal neu laden, damit alle die gleiche Version haben
+let version = "";
+function pruefeVersion(r){
+  const v = r.headers.get("X-Quiz-Version");
+  if (!v) return;
+  if (version && v !== version) location.reload();
+  version = v;
+}
+
 async function hole(){
   try{
     if (ansicht === "pin") return;
     if (!pin.get()) return pinFrage("Bitte gib deinen PIN ein.");
     const r = await fetch("/api/host/zustand", {cache:"no-store", headers:kopf()});
+    pruefeVersion(r);
     const d = await r.json();
     if (r.status === 401) return pinFrage("Der PIN stimmt nicht. Bitte nochmals eingeben.");
     if (r.status === 503 && d.fehler === "pin_fehlt"){ $("#main").innerHTML = "<section><h2>Noch kein PIN eingerichtet</h2><p style='margin-top:1em'>In Vercel unter Settings → Environment Variables die Variable <b>LEHRER_PIN</b> anlegen und neu deployen.</p></section>"; ansicht="x"; return; }
