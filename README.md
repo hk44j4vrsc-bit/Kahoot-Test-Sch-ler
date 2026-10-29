@@ -28,7 +28,16 @@ Fertig. `/host` öffnen, PIN eingeben, die Lobby zeigt Adresse und QR-Code für 
 
 ## Fragensätze
 
-Es gibt zwei Sätze: `abend1` (24 Fragen, Standard) und `bauprozess` (8 Fragen «Welche Phase?»). In der Lobby lässt sich der Satz im Feld «Fragen» wechseln, oder direkt über die Adresse `/host?set=bauprozess`.
+Es gibt vier Sätze, passend zu den Vertiefungen von Abend 1:
+
+| Satz | Thema | Aufruf |
+|---|---|---|
+| `abend1` | Gesamtquiz Abend 1 (24 Fragen, Standard) | `/host` |
+| `bauprozess` | 03 Bauprozess «Welche Phase?» (8) | `/host?set=bauprozess` |
+| `baurecht` | 04 Ampel-Quiz «Richtig oder falsch?» (8) | `/host?set=baurecht` |
+| `baubewilligung` | 05 «Bewilligung kompakt» (8) | `/host?set=baubewilligung` |
+
+In der Lobby lässt sich der Satz auch im Feld «Fragen» wechseln.
 
 ## Fragen ändern
 
