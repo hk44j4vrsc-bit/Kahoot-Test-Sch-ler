@@ -146,7 +146,10 @@ function pinFrage(text){
 
 async function aktion(aktion, wert){
   const phase = (aktion === "weiter" || aktion === "start") ? Z.phase : undefined;
-  await fetch("/api/host/aktion", {method:"POST", headers:kopf(), body:JSON.stringify({aktion, wert, phase})});
+  try {
+    const r = await fetch("/api/host/aktion", {method:"POST", headers:kopf(), body:JSON.stringify({aktion, wert, phase})});
+    if (!r.ok) { const d = await r.json().catch(() => ({})); $("#status").textContent = "Fehler: " + (d.fehler || r.status); }
+  } catch(e) { $("#status").textContent = "Keine Verbindung"; }
   hole();
 }
 
