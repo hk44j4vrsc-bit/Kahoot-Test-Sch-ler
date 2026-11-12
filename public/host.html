@@ -71,6 +71,11 @@ section{flex:1;display:flex;flex-direction:column;animation:rein .3s ease}
 .reihe div{background:var(--graublau);color:var(--navy);border-radius:14px;padding:1em 1.3em;font-weight:700;font-size:1.25em;min-height:9vh;display:flex;align-items:center;gap:.8em}
 .reihe.loes div{background:var(--navy);color:#fff;animation:rein .35s ease both}
 .reihe.loes div::before{counter-increment:nr;content:counter(nr);font-family:var(--title);color:var(--rosa);font-size:1.5em}
+.zuo{display:grid;grid-template-columns:repeat(auto-fit,minmax(14em,1fr));gap:1.2vw}
+.zuo div{background:var(--graublau);color:var(--navy);border-radius:14px;padding:.8em 1.2em;font-weight:700;font-size:1.2em;min-height:8vh;display:flex;flex-direction:column;justify-content:center;gap:.3em}
+.zuo.loes div{background:var(--navy);color:#fff;animation:rein .35s ease both}
+.zuo div small{font-family:var(--title);text-transform:uppercase;letter-spacing:.05em;color:var(--rosa);font-size:.75em}
+.kats{display:flex;gap:.6em;flex-wrap:wrap;margin-bottom:1.2vh}
 .erkl{background:var(--sand);border-left:6px solid var(--navy);border-radius:12px;padding:.9em 1.2em;margin-top:1.6vh;font-size:.95em;max-width:62em}
 
 /* Rangliste */
@@ -254,7 +259,7 @@ function frage(){
       ${Z.bild ? `<div class="bild">${Z.bild}</div>`:""}
       <div class="antw-info"><b id="antw-n">${Z.beantwortet}</b><span>von ${Z.spieler.length} Antworten</span></div>
     </div>
-    ${Z.typ === "reihenfolge" ? reiheHtml(Z.optionen, false) : optionenHtml(false)}
+    ${Z.typ === "reihenfolge" ? reiheHtml(Z.optionen, false) : Z.typ === "zuordnen" ? zuoHtml(false) : optionenHtml(false)}
     <div class="fuss"><span class="hinweis">Die Frage wird automatisch aufgelöst, wenn die Zeit abläuft oder alle geantwortet haben.</span><button class="btn ghost klein" id="go">Jetzt auflösen</button></div>
   </section>`;
   primaer = $("#go"); primaer.onclick = () => aktion("weiter");
@@ -264,8 +269,13 @@ function reiheHtml(liste, loes){
   return `<div class="reihe${loes ? " loes" : ""}">${liste.map((o,i)=>`<div style="animation-delay:${i*120}ms">${esc(o)}</div>`).join("")}</div>`;
 }
 
+function zuoHtml(loes){
+  if (loes) return `<div class="zuo loes">${Z.loesung.map(([a,k],i)=>`<div style="animation-delay:${i*120}ms"><small>${esc(k)}</small>${esc(a)}</div>`).join("")}</div>`;
+  return `<div class="kats">${Z.kategorien.map(k=>`<span class="pill koralle">${esc(k)}</span>`).join("")}</div><div class="zuo">${Z.optionen.map(o=>`<div>${esc(o)}</div>`).join("")}</div>`;
+}
+
 function aufloesung(){
-  if (Z.typ === "reihenfolge") return aufloesungReihe();
+  if (Z.typ === "reihenfolge" || Z.typ === "zuordnen") return aufloesungReihe();
   const max = Math.max(1, ...Z.verteilung);
   const letzte = Z.qi >= Z.anzahl - 1;
   $("#main").innerHTML = `<section>
@@ -288,7 +298,7 @@ function aufloesungReihe(){
     <div class="mitte">
       <div class="balken"><div class="gut"><b>${Z.gut}</b><i style="height:${Math.round(Z.gut/max*100)}%"></i><span>richtig</span></div><div class="schlecht"><b>${Z.schlecht}</b><i style="height:${Math.round(Z.schlecht/max*100)}%"></i><span>falsch</span></div></div>
     </div>
-    ${reiheHtml(Z.loesung, true)}
+    ${Z.typ === "zuordnen" ? zuoHtml(true) : reiheHtml(Z.loesung, true)}
     ${Z.erklaerung ? `<div class="erkl">${esc(Z.erklaerung)}</div>`:""}
     <div class="fuss"><button class="btn" id="go">${letzte ? "Zum Endergebnis" : "Rangliste"}</button></div>
   </section>`;
