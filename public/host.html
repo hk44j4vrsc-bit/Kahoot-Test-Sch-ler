@@ -155,7 +155,11 @@ let version = "";
 function pruefeVersion(r){
   const v = r.headers.get("X-Quiz-Version");
   if (!v) return;
-  if (version && v !== version) location.reload();
+  // Während eines Deploys antworten kurz alte und neue Version abwechselnd: jede Version höchstens einmal neu laden
+  let gesehen = []; try { gesehen = JSON.parse(sessionStorage.getItem("quiz_versionen") || "[]"); } catch(e){}
+  const neu = !gesehen.includes(v);
+  if (neu){ gesehen.push(v); try { sessionStorage.setItem("quiz_versionen", JSON.stringify(gesehen)); } catch(e){} }
+  if (version && v !== version && neu){ location.reload(); return; }
   version = v;
 }
 

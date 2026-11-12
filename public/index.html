@@ -50,10 +50,16 @@ input:focus{border-color:var(--navy)}
 #lsenden{background:var(--koralle);color:#fff}#lsenden:disabled{opacity:.35}#lneu{background:var(--graublau);color:var(--navy)}
 .zliste{display:flex;flex-direction:column;gap:10px;flex:1}
 .zitem{background:var(--graublau);border-radius:14px;padding:10px 12px}
-.zitem b{display:block;color:var(--navy);font-size:16px;margin-bottom:8px}
-.zkat{display:flex;flex-wrap:wrap;gap:6px}
-.zkat button{flex:1 1 40%;border:2px solid var(--navy);border-radius:999px;padding:8px 10px;font-weight:700;font-size:14px;color:var(--navy);background:#fff}
-.zkat button.an{background:var(--navy);color:#fff}
+.zitem b{display:block;color:var(--navy);font-size:15px;margin-bottom:8px;line-height:1.3}
+.zpool{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;min-height:44px;align-items:center}
+.zchip{display:inline-block;background:var(--koralle);color:#fff;border-radius:999px;padding:10px 16px;font-weight:700;font-size:15px;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+.zchip.an{background:var(--navy);box-shadow:0 0 0 3px var(--rosa)}
+.zchip.geist{position:fixed;z-index:50;transform:translate(-50%,-50%) scale(1.08);pointer-events:none;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+.zleer{color:#6b6f9e;font-style:italic;font-size:14px}
+.zslot{border:2px dashed var(--navy);border-radius:999px;min-height:44px;display:flex;align-items:center;justify-content:center;color:#6b6f9e;font-size:13px;background:#fff}
+.zslot.voll{border-style:solid;border-color:transparent;background:transparent}
+.zslot.voll .zchip{background:var(--navy)}
+.zslot.ueber{background:var(--rosa);border-style:solid}
 .res .zl{background:#fff;color:var(--navy);border-radius:14px;padding:10px 16px;font-weight:600;text-align:left;line-height:1.5;list-style:none}
 .res .zl b{color:var(--koralle)}.res .zl li{margin:5px 0}
 .res ol{text-align:left;background:#fff;color:var(--navy);border-radius:14px;padding:10px 16px 10px 36px;font-weight:700;line-height:1.6}
@@ -118,7 +124,11 @@ let version = "";
 function pruefeVersion(r){
   const v = r.headers.get("X-Quiz-Version");
   if (!v) return;
-  if (version && v !== version) location.reload();
+  // Während eines Deploys antworten kurz alte und neue Version abwechselnd: jede Version höchstens einmal neu laden
+  let gesehen = []; try { gesehen = JSON.parse(sessionStorage.getItem("quiz_versionen") || "[]"); } catch(e){}
+  const neu = !gesehen.includes(v);
+  if (neu){ gesehen.push(v); try { sessionStorage.setItem("quiz_versionen", JSON.stringify(gesehen)); } catch(e){} }
+  if (version && v !== version && neu){ location.reload(); return; }
   version = v;
 }
 
@@ -209,23 +219,63 @@ function frageReihe(){
   $("#lsenden").onclick = () => sende(runde, qi, wahl.slice());
 }
 
-// Zuordnen: pro Begriff eine Kategorie antippen, dann senden
+// Zuordnen: Kärtchen auf die passende Aussage ziehen (oder Kärtchen antippen, dann Feld antippen).
+// Jedes Kärtchen gibt es nur einmal. Ein gefülltes Feld antippen legt das Kärtchen zurück.
 function frageZuordnen(){
   const runde = Z.runde, qi = Z.qi, wahl = Z.optionen.map(() => -1);
+  let gewaehlt = -1;
   $("#main").innerHTML = `<section>
     <div class="fkopf"><span>Frage ${Z.qi+1} / ${Z.anzahl}</span><span id="sek"></span></div>
     <div class="zeit"><i id="balken"></i></div>
     <p class="ftext">${esc(Z.frage)}</p>
-    <div class="zliste">${Z.optionen.map((o,i)=>`<div class="zitem"><b>${esc(o)}</b><div class="zkat">${Z.kategorien.map((k,c)=>`<button data-i="${i}" data-c="${c}">${esc(k)}</button>`).join("")}</div></div>`).join("")}</div>
+    <div class="zpool" id="zpool"></div>
+    <div class="zliste">${Z.optionen.map((o,i)=>`<div class="zitem"><b>${esc(o)}</b><div class="zslot" data-i="${i}"></div></div>`).join("")}</div>
     <div class="lknoepfe"><button id="lsenden" disabled>Senden</button></div>
   </section>`;
-  document.querySelectorAll(".zkat button").forEach(b => b.onclick = () => {
-    const i = +b.dataset.i, c = +b.dataset.c;
-    wahl[i] = c;
-    document.querySelectorAll(`.zkat button[data-i="${i}"]`).forEach(x => x.classList.toggle("an", +x.dataset.c === c));
+  const zeige = () => {
+    $("#zpool").innerHTML = Z.kategorien.map((k,c) => wahl.includes(c) ? "" :
+      `<span class="zchip${c===gewaehlt?" an":""}" data-c="${c}">${esc(k)}</span>`).join("") || `<span class="zleer">Alle zugeteilt</span>`;
+    document.querySelectorAll(".zslot").forEach(sl => {
+      const c = wahl[+sl.dataset.i];
+      sl.classList.toggle("voll", c >= 0);
+      sl.innerHTML = c >= 0 ? `<span class="zchip">${esc(Z.kategorien[c])}</span>` : (gewaehlt >= 0 ? "hier antippen" : "hierher ziehen");
+    });
     $("#lsenden").disabled = wahl.includes(-1);
+  };
+  const setze = (i, c) => { const alt = wahl.indexOf(c); if (alt >= 0) wahl[alt] = -1; wahl[i] = c; gewaehlt = -1; zeige(); };
+  // Ziehen mit Finger oder Maus
+  $("#zpool").addEventListener("pointerdown", e => {
+    const chip = e.target.closest(".zchip"); if (!chip) return;
+    e.preventDefault();
+    const c = +chip.dataset.c, x0 = e.clientX, y0 = e.clientY;
+    let geist = null;
+    const zieh = ev => {
+      if (!geist && Math.hypot(ev.clientX - x0, ev.clientY - y0) < 8) return;
+      if (!geist){ geist = chip.cloneNode(true); geist.classList.add("geist"); document.body.appendChild(geist); }
+      geist.style.left = ev.clientX + "px"; geist.style.top = ev.clientY + "px";
+      document.querySelectorAll(".zslot").forEach(sl => sl.classList.remove("ueber"));
+      const ziel = document.elementFromPoint(ev.clientX, ev.clientY)?.closest(".zslot");
+      if (ziel) ziel.classList.add("ueber");
+    };
+    const los = ev => {
+      window.removeEventListener("pointermove", zieh); window.removeEventListener("pointerup", los); window.removeEventListener("pointercancel", los);
+      document.querySelectorAll(".zslot").forEach(sl => sl.classList.remove("ueber"));
+      if (geist){
+        geist.remove();
+        const ziel = document.elementFromPoint(ev.clientX, ev.clientY)?.closest(".zslot");
+        if (ziel) setze(+ziel.dataset.i, c);
+      } else { gewaehlt = gewaehlt === c ? -1 : c; zeige(); }
+    };
+    window.addEventListener("pointermove", zieh); window.addEventListener("pointerup", los); window.addEventListener("pointercancel", los);
+  });
+  // Antippen
+  document.querySelectorAll(".zslot").forEach(sl => sl.onclick = () => {
+    const i = +sl.dataset.i;
+    if (gewaehlt >= 0) setze(i, gewaehlt);
+    else if (wahl[i] >= 0){ wahl[i] = -1; zeige(); }
   });
   $("#lsenden").onclick = () => sende(runde, qi, wahl.slice());
+  zeige();
 }
 
 function aufloesung(){
