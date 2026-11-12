@@ -1,10 +1,9 @@
-# Live-Quiz «Bauliche Kenntnisse · Abend 01»
+# Live-Quiz «Bauliche Kenntnisse · Abend 02»
 
 Kahoot-artiges Quiz fürs Klassenzimmer. Die Lehrperson zeigt die Fragen am Beamer, die Teilnehmenden spielen mit dem Handy mit (WLAN oder Mobilfunk).
 
 - **Teilnehmende:** `https://<deine-adresse>.vercel.app`
 - **Lehrperson:** `https://<deine-adresse>.vercel.app/host` (mit PIN geschützt)
-- **Direkt mit dem Bauprozess-Quiz:** `https://<deine-adresse>.vercel.app/host?set=bauprozess`
 
 ## Einrichten auf Vercel (einmalig)
 
@@ -26,22 +25,13 @@ Fertig. `/host` öffnen, PIN eingeben, die Lobby zeigt Adresse und QR-Code für 
 - Namen in der Lobby anklicken = Person entfernen. «Alle entfernen» vor einer neuen Klasse.
 - Spielstände werden nach 2 Tagen automatisch gelöscht.
 
-## Fragensätze
+## Fragensatz
 
-Es gibt vier Sätze, passend zu den Vertiefungen von Abend 1:
-
-| Satz | Thema | Aufruf |
-|---|---|---|
-| `abend1` | Gesamtquiz Abend 1 (24 Fragen, Standard) | `/host` |
-| `bauprozess` | 03 Bauprozess: Phasen ordnen + «Welche Phase?» (10) | `/host?set=bauprozess` |
-| `baurecht` | 04 «Baurecht kompakt» (10, Rechenfragen mit mehr Zeit) | `/host?set=baurecht` |
-| `baubewilligung` | 05 «Bewilligung kompakt» (8) | `/host?set=baubewilligung` |
-
-In der Lobby lässt sich der Satz auch im Feld «Fragen» wechseln.
+Es gibt nur noch einen Satz: `baukonstruktion`, «Baukonstruktion kompakt» zu Thema 06 von Abend 2 (12 Fragen, je 20 Sekunden). `/host` öffnet ihn direkt.
 
 ## Fragen ändern
 
-Die Fragen stehen in `lib/fragen.js`, je Satz ein Eintrag. Die **erste Antwort** jeder Frage ist die richtige, im Spiel wird gemischt. Nach dem Speichern auf GitHub veröffentlicht Vercel automatisch neu.
+Die Fragen stehen in `lib/fragen.js`, im Satz `baukonstruktion`. Die **erste Antwort** jeder Frage ist die richtige, im Spiel wird gemischt. Nach dem Speichern auf GitHub veröffentlicht Vercel automatisch neu.
 
 ## Aufbau
 
