@@ -300,6 +300,7 @@ function aufloesungReihe(){
   $("#main").innerHTML = `<section>
     ${kopfHtml(false)}
     <div class="mitte">
+      ${Z.bild ? `<div class="bild">${Z.bild}</div>`:""}
       <div class="balken"><div class="gut"><b>${Z.gut}</b><i style="height:${Math.round(Z.gut/max*100)}%"></i><span>richtig</span></div><div class="schlecht"><b>${Z.schlecht}</b><i style="height:${Math.round(Z.schlecht/max*100)}%"></i><span>falsch</span></div></div>
     </div>
     ${Z.typ === "zuordnen" ? zuoHtml(true) : reiheHtml(Z.loesung, true)}

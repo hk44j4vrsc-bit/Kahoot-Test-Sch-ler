@@ -55,6 +55,8 @@ input:focus{border-color:var(--navy)}
 .zchip{display:inline-block;background:var(--koralle);color:#fff;border-radius:999px;padding:10px 16px;font-weight:700;font-size:15px;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
 .zchip.an{background:var(--navy);box-shadow:0 0 0 3px var(--rosa)}
 .zchip.geist{position:fixed;z-index:50;transform:translate(-50%,-50%) scale(1.08);pointer-events:none;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+.zbild{background:#fff;border:2px solid var(--graublau);border-radius:14px;padding:6px;margin-bottom:10px}.zbild svg{display:block;width:100%;height:auto;max-height:34vh}
+.zliste.kompakt{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:none}.zliste.kompakt .zitem{padding:8px}.zliste.kompakt .zitem b{font-size:14px;margin-bottom:6px}.zliste.kompakt .zchip{padding:8px 10px;font-size:13px}
 .zleer{color:#6b6f9e;font-style:italic;font-size:14px}
 .zslot{border:2px dashed var(--navy);border-radius:999px;min-height:44px;display:flex;align-items:center;justify-content:center;color:#6b6f9e;font-size:13px;background:#fff}
 .zslot.voll{border-style:solid;border-color:transparent;background:transparent}
@@ -228,8 +230,9 @@ function frageZuordnen(){
     <div class="fkopf"><span>Frage ${Z.qi+1} / ${Z.anzahl}</span><span id="sek"></span></div>
     <div class="zeit"><i id="balken"></i></div>
     <p class="ftext">${esc(Z.frage)}</p>
+    ${Z.bild ? `<div class="zbild">${Z.bild}</div>` : ""}
     <div class="zpool" id="zpool"></div>
-    <div class="zliste">${Z.optionen.map((o,i)=>`<div class="zitem"><b>${esc(o)}</b><div class="zslot" data-i="${i}"></div></div>`).join("")}</div>
+    <div class="zliste${Z.bild ? " kompakt" : ""}">${Z.optionen.map((o,i)=>`<div class="zitem"><b>${esc(o)}</b><div class="zslot" data-i="${i}"></div></div>`).join("")}</div>
     <div class="lknoepfe"><button id="lsenden" disabled>Senden</button></div>
   </section>`;
   const zeige = () => {
@@ -253,6 +256,8 @@ function frageZuordnen(){
       if (!geist && Math.hypot(ev.clientX - x0, ev.clientY - y0) < 8) return;
       if (!geist){ geist = chip.cloneNode(true); geist.classList.add("geist"); document.body.appendChild(geist); }
       geist.style.left = ev.clientX + "px"; geist.style.top = ev.clientY + "px";
+      // Am Bildschirmrand mitscrollen, damit man auch weiter unten ablegen kann
+      if (ev.clientY > innerHeight - 70) scrollBy(0, 14); else if (ev.clientY < 70) scrollBy(0, -14);
       document.querySelectorAll(".zslot").forEach(sl => sl.classList.remove("ueber"));
       const ziel = document.elementFromPoint(ev.clientX, ev.clientY)?.closest(".zslot");
       if (ziel) ziel.classList.add("ueber");
